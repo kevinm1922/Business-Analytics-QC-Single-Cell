@@ -1,4 +1,4 @@
-###Quality control (QC) scRNA-seq Analysis
+# Quality control (QC) scRNA-seq Analysis
 In this project, I performed quality control (QC) analysis on three single-cell RNA sequencing (scRNA-seq) datasets. The goal was to filter out outlier cells using two common QC metrics: the number of UMIs per cell and the number of genes per cell.
 
 I plotted the distributions of these variables, noting their positive correlation. Then, I established minimum and maximum cutoffs to define outliers based on visual inspection and statistical reasoning. I further visualized these cutoffs on the distribution plots.
