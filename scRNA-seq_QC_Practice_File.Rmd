@@ -1,0 +1,124 @@
+#Clear global environment 
+rm(list=ls())
+
+#Read in tsv file.
+test <- read.table(file = '~/Desktop/dataset1.tsv', sep = '\t', header = TRUE)
+
+summary(test)
+
+#Checking for NA values in dataset.
+sum(is.na(test$nUMIs))
+sum(is.na(test$nGenes))
+
+#Checking for 0 values in dataset.
+all(test$nUMIs== 0)
+all(test$nGenes== 0)
+
+
+#These cut offs were determined as an outlier because they are 1.5 times the IQR above the 75 th percentile or below the 25 th percentile. 
+Q1 <- quantile(test$nUMIs, .25)
+Q3 <- quantile(test$nUMIs, .75)
+IQR <- IQR(test$nUMIs)
+Low_outliers <- pmax(Q1 - 1.5*IQR, 0)
+High_outliers <- Q3 + 1.5*IQR
+
+nQ1 <- quantile(test$nGenes, .25)
+nQ3 <- quantile(test$nGenes, .75)
+nIQR <- IQR(test$nGenes)
+nLow_outliers <- pmax(nQ1 - 1.5*nIQR, 0)
+nHigh_outliers <- nQ3 + 1.5*nIQR
+
+
+
+#Histogram for nUMIs & nGenes distribution with vertical lines indicating cutoff. 
+hist(test$nUMIs, main = "Histogram for nUMIs", xlab= "Values",col= "lightblue")
+abline(v=Low_outliers, col="red", lty=2, lwd=2)
+abline(v=High_outliers, col="red", lty=2, lwd=2)
+
+hist(test$nGenes, main = "Histogram for nGenes", xlab= "Values", col= "lightblue")
+abline(v=nLow_outliers, col="red", lty=2, lwd=2)
+abline(v=nHigh_outliers, col="red", lty=2, lwd=2)
+
+
+# Filtered out cells from nUMIs & nGenes into a new df. 
+eliminate_outliers <- subset(test, test$nUMIs > (Q1 - 1.5*IQR) & test$nUMIs < (Q3 + 1.5*IQR))
+
+n_eliminate_outliers <- subset(test, test$nGenes > (nQ1 - 1.5*nIQR) & test$nGenes < (nQ3 + 1.5*nIQR))
+
+# Updated Histograms for nUMIs & nGenes after cuts. 
+hist(eliminate_outliers$nUMIs, main = "Histogram for nUMIs", xlab= "Values", col= "lightblue")
+hist(n_eliminate_outliers$nGenes, main = "Histogram for nGenes", xlab= "Values", col= "lightblue")
+
+
+
+#Another visualization for graphs using a boxplot because they better display range and distribution of data along a number line.
+#Plus, they elucidate a better representation of symmetry and skewness of the data. 
+boxplot(eliminate_outliers$nUMIs, main= "Boxplots for nUMIs", ylab= "Values" ,xlab= "nUMIs", col= "lightblue")
+boxplot(n_eliminate_outliers$nGenes, main= "Boxplots for nGenes", ylab= "Values", xlab= "nGenes",col= "lightblue")
+
+
+#Created a trim outliers function to get rid of outliers that were 1.5 times the IQR above the 75 th percentile or below the 25 th percentile.
+trim_outliers <- function(x){
+  x[(x > quantile(x, 0.25)-1.5*IQR(x)) & (x < quantile(x, 0.75)+1.5*IQR(x))]
+}
+
+par(mfrow=c(1,2))
+hist(trim_outliers(test$nUMIs), main = "Histogram for nUMIs", xlab= "Values", col= "lightblue")
+hist(trim_outliers(test$nGenes), main = "Histogram for nGenes", xlab= "Values", col= "lightblue")
+
+
+#!/usr/bin/env Rscript --vanilla
+
+#In terminal I made the file executable using the command line chmod +x Immunai_Q3_4.R
+#Then I was able to use the command line to pick which tsv file I would like to generate.
+#Ex:~/Desktop/Immunai_Q3_4.R dataset1.tsv
+
+args <- commandArgs(trailingOnly=TRUE)
+
+inputfile <- args[1]
+
+#Read in tsv file.
+test <- read.table(file = inputfile , sep = '\t', header = TRUE)
+
+
+Q1 <- quantile(test$nUMIs, .25)
+Q3 <- quantile(test$nUMIs, .75)
+IQR <- IQR(test$nUMIs)
+Low_outliers <- pmax(Q1 - 1.5*IQR, 0)
+High_outliers <- Q3 + 1.5*IQR
+
+nQ1 <- quantile(test$nGenes, .25)
+nQ3 <- quantile(test$nGenes, .75)
+nIQR <- IQR(test$nGenes)
+nLow_outliers <- pmax(nQ1 - 1.5*nIQR, 0)
+nHigh_outliers <- nQ3 + 1.5*nIQR
+
+#Filtered out cells from nUMIs & nGenes into a new df. 
+eliminate_outliers <- subset(test, test$nUMIs > (Q1 - 1.5*IQR) & test$nUMIs < (Q3 + 1.5*IQR))
+
+n_eliminate_outliers <- subset(test, test$nGenes > (nQ1 - 1.5*nIQR) & test$nGenes < (nQ3 + 1.5*nIQR))
+
+
+#A json report detailing the chosen cutoffs and number of cells filtered due to each cutoff.
+
+sink("~/Desktop/outfile.json")
+cat("{","'1'",":","'Chosen cutoffs for nUMIs are", Low_outliers, "and", High_outliers,"',", "\n")
+cat("'2'",":","'Chosen cutoffs for nGenes are", nLow_outliers, "and", nHigh_outliers,"',", "\n" )
+cat("'3'",":","'The number of cells filtered due to each cutoff for nUMIs is", nrow(test) - nrow(eliminate_outliers),"',", "\n")
+cat("'4'",":", "'The number of cells filtered due to each  cutoff nGenes for is", nrow(test) - nrow(n_eliminate_outliers), "',", "}")
+sink()
+
+
+#Histograms for nUMIs & nGenes after cuts.
+pdf("~/Desktop/histograms.pdf")
+par(mfrow=c(1,2))
+hist(eliminate_outliers$nUMIs, main = "Histogram for nUMIs", xlab= "Values", col= "lightblue")
+hist(n_eliminate_outliers$nGenes, main = "Histogram for nGenes", xlab= "Values", col= "lightblue")
+dev.off()
+
+#Additional plots: boxplots for nUMIs & nGenes after cuts.
+pdf("~/Desktop/boxplots.pdf")
+par(mfrow=c(1,2))
+boxplot(eliminate_outliers$nUMIs, main= "Boxplots for nUMIs", ylab= "Values" ,xlab= "nUMIs", col= "lightblue")
+boxplot(n_eliminate_outliers$nGenes, main= "Boxplots for nGenes", ylab= "Values", xlab= "nGenes",col= "lightblue")
+dev.off()
