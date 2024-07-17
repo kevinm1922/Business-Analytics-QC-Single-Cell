@@ -40,12 +40,12 @@ abline(v=nLow_outliers, col="red", lty=2, lwd=2)
 abline(v=nHigh_outliers, col="red", lty=2, lwd=2)
 
 
-# Filtered out cells from nUMIs & nGenes into a new df. 
+#Filtered out cells from nUMIs & nGenes into a new df. 
 eliminate_outliers <- subset(test, test$nUMIs > (Q1 - 1.5*IQR) & test$nUMIs < (Q3 + 1.5*IQR))
 
 n_eliminate_outliers <- subset(test, test$nGenes > (nQ1 - 1.5*nIQR) & test$nGenes < (nQ3 + 1.5*nIQR))
 
-# Updated Histograms for nUMIs & nGenes after cuts. 
+#Updated Histograms for nUMIs & nGenes after cuts. 
 hist(eliminate_outliers$nUMIs, main = "Histogram for nUMIs", xlab= "Values", col= "lightblue")
 hist(n_eliminate_outliers$nGenes, main = "Histogram for nGenes", xlab= "Values", col= "lightblue")
 
